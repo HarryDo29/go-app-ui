@@ -1,8 +1,7 @@
-import { createRootRouteWithContext, Outlet, Link } from "@tanstack/react-router";
-import type { QueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 
 // ─── Not Found ─────────────────────────────────────────────────────────────
-function NotFound() {
+export default function NotFound() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-neutral-50 dark:bg-neutral-950 px-4">
       <div className="text-center">
@@ -23,9 +22,3 @@ function NotFound() {
     </div>
   );
 }
-
-// ─── Root Route ─────────────────────────────────────────────────────────────
-export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  component: () => <Outlet />,
-  notFoundComponent: NotFound,
-});

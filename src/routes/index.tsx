@@ -1,4 +1,3 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 
 import { friends, groups, initialMessages } from "@/components/chat/types";
@@ -8,11 +7,7 @@ import { ConversationPanel } from "@/components/chat/ConversationPanel";
 import { ChatHeader, MessageList, MessageInput } from "@/components/chat/ChatArea";
 import { RightPanel } from "@/components/chat/RightPanel";
 
-export const Route = createFileRoute("/")({
-  component: ChatApp,
-});
-
-function ChatApp() {
+export default function ChatApp() {
   const [tab, setTab] = useState<TabKey>("friends");
   const [activeId, setActiveId] = useState<string>("f1");
   const [showRight, setShowRight] = useState(true);
