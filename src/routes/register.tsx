@@ -1,15 +1,20 @@
 import { useState, type FormEvent } from "react";
 import { Navigate, Link } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
-import { MessageCircle, Eye, EyeOff, Loader2, Mail, Lock } from "lucide-react";
+import { registerApi } from "@/lib/api/auth";
+import { MessageCircle, Eye, EyeOff, Loader2, Mail, Lock, User } from "lucide-react";
 
-export default function LoginPage() {
-  const { login, isAuthenticated, isLoading: authLoading } = useAuth();
+export default function RegisterPage() {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   // Already logged in → go home
@@ -18,16 +23,66 @@ export default function LoginPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
+
+    // Validate
+    if (password !== confirmPassword) {
+      setError("Mật khẩu xác nhận không khớp");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Mật khẩu phải có ít nhất 6 ký tự");
+      return;
+    }
+
     setSubmitting(true);
 
     try {
-      await login({ email, password });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Đã xảy ra lỗi");
+      await registerApi({ name, email, password });
+      setSuccess(true);
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        (err instanceof Error ? err.message : "Đã xảy ra lỗi");
+      setError(message);
     } finally {
       setSubmitting(false);
     }
   };
+
+  // Success state
+  if (success) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-neutral-50 px-4">
+        <div className="w-full max-w-[400px]">
+          <div className="rounded-2xl border border-neutral-200 bg-white p-8 shadow-sm text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
+              <svg
+                className="h-7 w-7 text-green-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-lg font-semibold text-neutral-900">Đăng ký thành công!</h2>
+            <p className="mt-2 text-sm text-neutral-500">
+              Tài khoản của bạn đã được tạo. Bạn có thể đăng nhập ngay bây giờ.
+            </p>
+            <Link
+              to="/login"
+              className="mt-6 inline-flex h-10 items-center justify-center rounded-lg bg-primary px-6 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              Đi tới đăng nhập
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-neutral-50 px-4">
@@ -40,8 +95,8 @@ export default function LoginPage() {
               <MessageCircle className="h-6 w-6 text-white" />
             </div>
             <div className="text-center">
-              <h1 className="text-xl font-semibold text-neutral-900">Nova App</h1>
-              <p className="mt-1 text-sm text-neutral-500">Welcome back</p>
+              <h1 className="text-xl font-semibold text-neutral-900">Tạo tài khoản</h1>
+              <p className="mt-1 text-sm text-neutral-500">Đăng ký để bắt đầu sử dụng Nova App</p>
             </div>
           </div>
 
@@ -54,19 +109,42 @@ export default function LoginPage() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Name */}
+            <div className="space-y-1.5">
+              <label htmlFor="register-name" className="block text-sm font-medium text-neutral-700">
+                Họ và tên
+              </label>
+              <div className="relative">
+                <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                <input
+                  id="register-name"
+                  type="text"
+                  required
+                  autoComplete="name"
+                  autoFocus
+                  placeholder="Nguyễn Văn A"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="h-10 w-full rounded-lg border border-neutral-300 bg-white pl-10 pr-4 text-sm text-neutral-900 placeholder-neutral-400 outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+            </div>
+
             {/* Email */}
             <div className="space-y-1.5">
-              <label htmlFor="login-email" className="block text-sm font-medium text-neutral-700">
+              <label
+                htmlFor="register-email"
+                className="block text-sm font-medium text-neutral-700"
+              >
                 Email
               </label>
               <div className="relative">
                 <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
                 <input
-                  id="login-email"
+                  id="register-email"
                   type="email"
                   required
                   autoComplete="email"
-                  autoFocus
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -78,7 +156,7 @@ export default function LoginPage() {
             {/* Password */}
             <div className="space-y-1.5">
               <label
-                htmlFor="login-password"
+                htmlFor="register-password"
                 className="block text-sm font-medium text-neutral-700"
               >
                 Mật khẩu
@@ -86,11 +164,11 @@ export default function LoginPage() {
               <div className="relative">
                 <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
                 <input
-                  id="login-password"
+                  id="register-password"
                   type={showPw ? "text" : "password"}
                   required
-                  autoComplete="current-password"
-                  placeholder="••••••••"
+                  autoComplete="new-password"
+                  placeholder="Ít nhất 6 ký tự"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="h-10 w-full rounded-lg border border-neutral-300 bg-white pl-10 pr-10 text-sm text-neutral-900 placeholder-neutral-400 outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
@@ -107,14 +185,36 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Forgot password link */}
-            <div className="flex justify-end">
-              <button
-                type="button"
-                className="text-xs text-primary hover:text-primary/90 transition-colors"
+            {/* Confirm Password */}
+            <div className="space-y-1.5">
+              <label
+                htmlFor="register-confirm-password"
+                className="block text-sm font-medium text-neutral-700"
               >
-                Quên mật khẩu?
-              </button>
+                Xác nhận mật khẩu
+              </label>
+              <div className="relative">
+                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                <input
+                  id="register-confirm-password"
+                  type={showConfirmPw ? "text" : "password"}
+                  required
+                  autoComplete="new-password"
+                  placeholder="Nhập lại mật khẩu"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="h-10 w-full rounded-lg border border-neutral-300 bg-white pl-10 pr-10 text-sm text-neutral-900 placeholder-neutral-400 outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => setShowConfirmPw((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 transition-colors"
+                  aria-label={showConfirmPw ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                >
+                  {showConfirmPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
 
             {/* Submit */}
@@ -123,7 +223,7 @@ export default function LoginPage() {
               disabled={submitting}
               className="flex h-10 w-full items-center justify-center rounded-lg bg-primary text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 active:bg-primary/95 disabled:pointer-events-none disabled:opacity-50"
             >
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Đăng nhập"}
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Đăng ký"}
             </button>
           </form>
 
@@ -162,12 +262,12 @@ export default function LoginPage() {
 
         {/* Footer link */}
         <p className="mt-5 text-center text-sm text-neutral-500">
-          Chưa có tài khoản?{" "}
+          Đã có tài khoản?{" "}
           <Link
-            to="/register"
+            to="/login"
             className="font-medium text-primary hover:text-primary/90 transition-colors"
           >
-            Đăng ký
+            Đăng nhập
           </Link>
         </p>
       </div>

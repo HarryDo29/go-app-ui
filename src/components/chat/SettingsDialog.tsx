@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   Settings,
   User,
@@ -13,6 +13,9 @@ import {
   Moon,
   Monitor,
   Camera,
+  ChevronDown,
+  ChevronUp,
+  Trash2,
 } from "lucide-react";
 import {
   Dialog,
@@ -26,6 +29,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { NavBtn } from "./ui-primitives";
+import { useAuth } from "@/lib/auth-context";
+import { useTheme, type AccentColor } from "@/lib/theme-context";
+import { updateUserApi, deleteUserApi } from "@/lib/api/users";
+import { changePasswordApi } from "@/lib/api/auth";
+import { generatePresignedUrlApi } from "@/lib/api/upload";
+import axios from "axios";
+import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -39,15 +49,111 @@ interface SettingsItem {
 
 const SECTIONS: SettingsItem[] = [
   { id: "profile", icon: <User size={16} />, label: "Hồ sơ cá nhân" },
+  { id: "privacy", icon: <Shield size={16} />, label: "Bảo mật" },
   { id: "notifications", icon: <Bell size={16} />, label: "Thông báo" },
   { id: "appearance", icon: <Palette size={16} />, label: "Giao diện" },
-  { id: "privacy", icon: <Shield size={16} />, label: "Bảo mật & Quyền riêng tư" },
   { id: "language", icon: <Globe size={16} />, label: "Ngôn ngữ & Vùng" },
 ];
 
 // ─── Section: Profile ─────────────────────────────────────────────────────────
 
 function ProfileSection() {
+  const { user, updateProfile } = useAuth();
+  const [displayName, setDisplayName] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (user) {
+      setDisplayName(user.user_name || "");
+    }
+  }, [user]);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    setIsUploadingAvatar(true);
+    try {
+      // 1. Lấy presigned URL từ backend
+      const ext = file.name.split(".").pop();
+      const objectName = `avatar_${user.id}_${Date.now()}.${ext}`;
+
+      const presignedRes = await generatePresignedUrlApi({
+        object_name: objectName,
+        content_type: file.type,
+        folder: "avatars",
+      });
+
+      const uploadUrl = presignedRes.data?.url;
+      if (!uploadUrl) {
+        throw new Error("Không lấy được link upload từ server");
+      }
+
+      // 2. Upload file trực tiếp lên MinIO qua link presigned
+      await axios.put(uploadUrl, file, {
+        headers: {
+          "Content-Type": file.type,
+        },
+      });
+
+      // 3. Cập nhật URL avatar mới trong DB của user
+      const cleanUrl = uploadUrl.split("?")[0];
+      const updatedData = await updateUserApi(user.id, { avatar_url: cleanUrl });
+      const updatedUser = updatedData?.data || updatedData;
+
+      if (updatedUser) {
+        updateProfile(updatedUser);
+        toast.success("Thay đổi ảnh đại diện thành công!");
+      }
+    } catch (err: any) {
+      console.error("Lỗi thay đổi avatar:", err);
+      toast.error(err?.message || "Không thể thay đổi ảnh đại diện");
+    } finally {
+      setIsUploadingAvatar(false);
+      // Reset value của input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleSave = async () => {
+    if (!user) return;
+    if (!displayName.trim()) {
+      toast.error("Tên hiển thị không được để trống");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const updatedData = await updateUserApi(user.id, { user_name: displayName });
+      const updatedUser = updatedData?.data || updatedData;
+      if (updatedUser && (updatedUser.id || updatedUser.user_id)) {
+        updateProfile(updatedUser);
+      } else {
+        updateProfile({ ...user, user_name: displayName });
+      }
+      toast.success("Cập nhật thông tin thành công!");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Không thể cập nhật thông tin");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const getInitials = (name: string) => {
+    if (!name) return "ME";
+    const parts = name.trim().split(" ");
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+
+  const initials = user ? getInitials(user.user_name) : "ME";
+
   return (
     <div className="space-y-6">
       <div>
@@ -56,17 +162,42 @@ function ProfileSection() {
         </h3>
         {/* Avatar */}
         <div className="flex items-center gap-4 mb-6">
-          <div className="relative group">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-white text-xl font-bold">
-              ME
-            </div>
-            <button className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer">
-              <Camera size={16} className="text-white" />
-            </button>
+          <div
+            onClick={() => !isUploadingAvatar && fileInputRef.current?.click()}
+            className="relative group cursor-pointer"
+          >
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleAvatarChange}
+              accept="image/*"
+              className="hidden"
+            />
+            {isUploadingAvatar ? (
+              <div className="w-16 h-16 rounded-full border-2 border-primary border-t-transparent animate-spin flex items-center justify-center bg-neutral-100 dark:bg-neutral-800" />
+            ) : user?.avatar_url ? (
+              <img
+                src={user.avatar_url}
+                alt={user.user_name}
+                className="w-16 h-16 rounded-full object-cover border border-neutral-200 dark:border-neutral-800"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white text-xl font-bold">
+                {initials}
+              </div>
+            )}
+            {!isUploadingAvatar && (
+              <button
+                type="button"
+                className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer"
+              >
+                <Camera size={16} className="text-white" />
+              </button>
+            )}
           </div>
           <div>
             <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-              Người dùng của tôi
+              {user?.user_name || "Người dùng"}
             </p>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
               Bấm vào avatar để thay đổi ảnh
@@ -85,18 +216,10 @@ function ProfileSection() {
             </label>
             <Input
               id="s-display-name"
-              defaultValue="Người dùng"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
               placeholder="Nhập tên của bạn..."
             />
-          </div>
-          <div className="grid gap-1.5">
-            <label
-              htmlFor="s-status"
-              className="text-xs font-medium text-neutral-600 dark:text-neutral-400"
-            >
-              Trạng thái
-            </label>
-            <Input id="s-status" defaultValue="Đang hoạt động" placeholder="Đặt trạng thái..." />
           </div>
           <div className="grid gap-1.5">
             <label
@@ -108,14 +231,75 @@ function ProfileSection() {
             <Input
               id="s-email"
               type="email"
-              defaultValue="me@company.com"
+              value={user?.email || ""}
               disabled
               className="opacity-60 cursor-not-allowed"
             />
           </div>
         </div>
       </div>
-      <Button className="bg-indigo-500 hover:bg-indigo-600 text-white w-full">Lưu thay đổi</Button>
+      <Button
+        className="bg-primary hover:bg-primary/90 text-primary-foreground w-full"
+        onClick={handleSave}
+        disabled={isSaving}
+      >
+        {isSaving ? "Đang lưu..." : "Lưu thay đổi"}
+      </Button>
+      {/* Xóa tài khoản */}
+      <div className="mt-2 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30 p-4">
+        <div className="flex items-start gap-3">
+          <Trash2 size={16} className="text-red-500 mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-red-700 dark:text-red-400">Xóa tài khoản</p>
+            <p className="text-xs text-red-600/70 dark:text-red-400/60 mt-0.5">
+              Hành động này không thể hoàn tác. Toàn bộ dữ liệu của bạn sẽ bị xóa vĩnh viễn.
+            </p>
+            {!showDeleteConfirm ? (
+              <Button
+                variant="destructive"
+                size="sm"
+                className="mt-3 h-8 text-xs"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                Xóa tài khoản
+              </Button>
+            ) : (
+              <div className="mt-3 flex items-center gap-2">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="h-8 text-xs"
+                  disabled={isDeleting}
+                  onClick={async () => {
+                    if (!user) return;
+                    setIsDeleting(true);
+                    try {
+                      await deleteUserApi(user.id);
+                      toast.success("Tài khoản đã được xóa");
+                      window.location.href = "/login";
+                    } catch (err: any) {
+                      toast.error(err?.message || "Không thể xóa tài khoản");
+                    } finally {
+                      setIsDeleting(false);
+                    }
+                  }}
+                >
+                  {isDeleting ? "Đang xóa..." : "Xác nhận xóa"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs"
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={isDeleting}
+                >
+                  Hủy
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -143,7 +327,7 @@ function ToggleRow({ icon, label, desc, defaultChecked = true }: ToggleRowProps)
       <Switch
         checked={checked}
         onCheckedChange={setChecked}
-        className="data-[state=checked]:bg-indigo-500"
+        className="data-[state=checked]:bg-primary"
       />
     </div>
   );
@@ -199,7 +383,7 @@ function ThemeOption({ icon, label, active, onClick }: ThemeOptionProps) {
       className={cn(
         "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition cursor-pointer w-full",
         active
-          ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
+          ? "border-primary bg-primary/10 dark:bg-primary/15 text-primary"
           : "border-neutral-200 dark:border-neutral-700 text-neutral-500 hover:border-neutral-300 dark:hover:border-neutral-600",
       )}
     >
@@ -210,8 +394,16 @@ function ThemeOption({ icon, label, active, onClick }: ThemeOptionProps) {
 }
 
 function AppearanceSection() {
-  const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
+  const { theme, setTheme, accentColor, setAccentColor } = useTheme();
   const [fontSize, setFontSize] = useState<"sm" | "md" | "lg">("md");
+
+  const accents: { id: AccentColor; name: string; colorClass: string }[] = [
+    { id: "indigo", name: "Indigo", colorClass: "bg-indigo-500" },
+    { id: "blue", name: "Blue", colorClass: "bg-blue-500" },
+    { id: "emerald", name: "Emerald", colorClass: "bg-emerald-500" },
+    { id: "rose", name: "Rose", colorClass: "bg-rose-500" },
+    { id: "amber", name: "Amber", colorClass: "bg-amber-500" },
+  ];
 
   return (
     <div className="space-y-6">
@@ -239,6 +431,31 @@ function AppearanceSection() {
             active={theme === "system"}
             onClick={() => setTheme("system")}
           />
+        </div>
+      </div>
+
+      {/* Accent Color */}
+      <div>
+        <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-3">
+          Màu chủ đạo
+        </h3>
+        <div className="flex items-center gap-3">
+          {accents.map((acc) => (
+            <button
+              key={acc.id}
+              onClick={() => setAccentColor(acc.id)}
+              title={acc.name}
+              className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition transform hover:scale-110",
+                acc.colorClass,
+                accentColor === acc.id
+                  ? "ring-2 ring-offset-2 ring-neutral-900 dark:ring-offset-neutral-900 dark:ring-white scale-110"
+                  : "opacity-80 hover:opacity-100",
+              )}
+            >
+              {accentColor === acc.id && <span className="w-2 h-2 rounded-full bg-white" />}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -281,36 +498,155 @@ function AppearanceSection() {
 // ─── Section: Privacy ─────────────────────────────────────────────────────────
 
 function PrivacySection() {
+  const { logout } = useAuth();
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isChanging, setIsChanging] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      toast.error("Vui lòng nhập đầy đủ thông tin");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("Mật khẩu mới không khớp!");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("Mật khẩu mới phải dài tối thiểu 6 ký tự");
+      return;
+    }
+
+    setIsChanging(true);
+    try {
+      await changePasswordApi({
+        old_password: oldPassword,
+        new_password: newPassword,
+        conf_password: confirmPassword,
+      });
+      toast.success("Thay đổi mật khẩu thành công!");
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setIsFormOpen(false); // Optionally close form on success
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Không thể đổi mật khẩu, vui lòng kiểm tra lại mật khẩu cũ");
+    } finally {
+      setIsChanging(false);
+    }
+  };
+
   return (
-    <div className="space-y-1">
-      <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
-        Bảo mật & Quyền riêng tư
-      </h3>
-      <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
-        <ToggleRow
-          icon={<Shield size={16} />}
-          label="Xác thực 2 bước"
-          desc="Bảo vệ tài khoản thêm một lớp"
-          defaultChecked={false}
-        />
-        <ToggleRow
-          icon={<User size={16} />}
-          label="Hiển thị trạng thái online"
-          desc="Người khác có thể thấy bạn đang online"
-        />
-        <ToggleRow
-          icon={<Bell size={16} />}
-          label="Xác nhận đã đọc"
-          desc="Gửi thông báo đã đọc cho người gửi"
-        />
-        <ToggleRow
-          icon={<Shield size={16} />}
-          label="Mã hoá đầu cuối"
-          desc="Bật mặc định cho mọi cuộc trò chuyện"
-        />
+    <div className="space-y-6">
+      {/* Privacy settings */}
+      <div>
+        <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
+          Bảo mật & Quyền riêng tư
+        </h3>
+        <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+          <ToggleRow
+            icon={<Shield size={16} />}
+            label="Xác thực 2 bước"
+            desc="Bảo vệ tài khoản thêm một lớp"
+            defaultChecked={false}
+          />
+          <ToggleRow
+            icon={<User size={16} />}
+            label="Hiển thị trạng thái online"
+            desc="Người khác có thể thấy bạn đang online"
+          />
+          <ToggleRow
+            icon={<Bell size={16} />}
+            label="Xác nhận đã đọc"
+            desc="Gửi thông báo đã đọc cho người gửi"
+          />
+          <ToggleRow
+            icon={<Shield size={16} />}
+            label="Mã hoá đầu cuối"
+            desc="Bật mặc định cho mọi cuộc trò chuyện"
+          />
+        </div>
       </div>
-      <div className="pt-4">
-        <Button variant="destructive" size="sm" className="w-full">
+
+      {/* Change password form */}
+      <div className="border-t border-neutral-100 dark:border-neutral-800 pt-5">
+        <button
+          type="button"
+          onClick={() => setIsFormOpen(!isFormOpen)}
+          className="w-full flex items-center justify-between py-2 text-left font-semibold text-neutral-900 dark:text-neutral-100 cursor-pointer hover:opacity-85 transition-opacity"
+        >
+          <span className="text-sm">Đổi mật khẩu</span>
+          {isFormOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </button>
+
+        {isFormOpen && (
+          <form
+            onSubmit={handlePasswordChange}
+            className="mt-4 space-y-4 animate-in fade-in slide-in-from-top-1 duration-200"
+          >
+            <div className="grid gap-1.5">
+              <label
+                htmlFor="s-old-password"
+                className="text-xs font-medium text-neutral-600 dark:text-neutral-400"
+              >
+                Mật khẩu hiện tại
+              </label>
+              <Input
+                id="s-old-password"
+                type="password"
+                placeholder="••••••••"
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <label
+                htmlFor="s-new-password"
+                className="text-xs font-medium text-neutral-600 dark:text-neutral-400"
+              >
+                Mật khẩu mới
+              </label>
+              <Input
+                id="s-new-password"
+                type="password"
+                placeholder="••••••••"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <label
+                htmlFor="s-confirm-password"
+                className="text-xs font-medium text-neutral-600 dark:text-neutral-400"
+              >
+                Xác nhận mật khẩu mới
+              </label>
+              <Input
+                id="s-confirm-password"
+                type="password"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={isChanging}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground w-full"
+            >
+              {isChanging ? "Đang cập nhật..." : "Cập nhật mật khẩu"}
+            </Button>
+          </form>
+        )}
+      </div>
+
+      {/* Logout button */}
+      <div className="border-t border-neutral-100 dark:border-neutral-800 pt-5">
+        <Button variant="destructive" size="sm" className="w-full" onClick={logout}>
           Đăng xuất khỏi tất cả thiết bị
         </Button>
       </div>
@@ -326,8 +662,6 @@ function LanguageSection() {
   const languages = [
     { code: "vi", name: "Tiếng Việt", flag: "🇻🇳" },
     { code: "en", name: "English", flag: "🇺🇸" },
-    { code: "ja", name: "日本語", flag: "🇯🇵" },
-    { code: "ko", name: "한국어", flag: "🇰🇷" },
   ];
 
   return (
@@ -343,14 +677,14 @@ function LanguageSection() {
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition cursor-pointer",
                 selected === lang.code
-                  ? "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-medium"
+                  ? "bg-primary/10 dark:bg-primary/15 text-primary font-medium"
                   : "hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300",
               )}
             >
               <span className="text-base">{lang.flag}</span>
               <span>{lang.name}</span>
               {selected === lang.code && (
-                <span className="ml-auto text-xs bg-indigo-500 text-white px-1.5 py-0.5 rounded-full">
+                <span className="ml-auto text-xs bg-primary text-white px-1.5 py-0.5 rounded-full">
                   Đang dùng
                 </span>
               )}
@@ -406,7 +740,7 @@ export function SettingsDialog() {
                       className={cn(
                         "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition cursor-pointer",
                         active === s.id
-                          ? "bg-indigo-500 text-white font-medium"
+                          ? "bg-primary text-white font-medium"
                           : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-800",
                       )}
                     >

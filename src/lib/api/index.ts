@@ -1,7 +1,7 @@
 // ─── API Barrel Export ──────────────────────────────────────────────────────
-// Import tất cả API modules từ đây:
-//   import { api } from "@/lib/api";
+// Import API:
+//   import axiosClient from "@/lib/api/axiosClient";
 //   import { loginApi, getMeApi } from "@/lib/api/auth";
 // ─────────────────────────────────────────────────────────────────────────────
 
-export { api, ApiError } from "./fetch-client";
+export { default as axiosClient } from "./axiosClient";

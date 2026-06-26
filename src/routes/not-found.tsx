@@ -5,7 +5,7 @@ export default function NotFound() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-neutral-50 dark:bg-neutral-950 px-4">
       <div className="text-center">
-        <p className="text-indigo-500 font-semibold text-sm tracking-widest uppercase mb-4">404</p>
+        <p className="text-primary font-semibold text-sm tracking-widest uppercase mb-4">404</p>
         <h1 className="text-5xl font-bold text-neutral-900 dark:text-neutral-100">
           Trang không tìm thấy
         </h1>
@@ -14,7 +14,7 @@ export default function NotFound() {
         </p>
         <Link
           to="/"
-          className="mt-8 inline-flex items-center justify-center rounded-lg bg-indigo-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-600 active:bg-indigo-700 transition"
+          className="mt-8 inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white hover:bg-primary/90 active:bg-primary/95 transition"
         >
           Về trang chủ
         </Link>

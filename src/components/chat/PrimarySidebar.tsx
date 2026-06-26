@@ -1,34 +1,48 @@
-import { Users, UsersRound, Bell, Sun, Moon } from "lucide-react";
+import { User, UsersRound, Bell, Sun, Moon } from "lucide-react";
 import type { TabKey } from "./types";
 import { NavBtn } from "./ui-primitives";
 import { SettingsDialog } from "./SettingsDialog";
+import { useAuth } from "@/lib/auth-context";
+import { useTheme } from "@/lib/theme-context";
 
 interface PrimarySidebarProps {
   tab: TabKey;
   showNotif: boolean;
-  dark: boolean;
   onTabChange: (tab: TabKey) => void;
   onToggleNotif: () => void;
-  onToggleDark: () => void;
 }
 
 export function PrimarySidebar({
   tab,
   showNotif,
-  dark,
   onTabChange,
   onToggleNotif,
-  onToggleDark,
 }: PrimarySidebarProps) {
+  const { user } = useAuth();
+  const { isDark, setTheme } = useTheme();
+
+  const handleToggleTheme = () => {
+    setTheme(isDark ? "light" : "dark");
+  };
+
+  const getInitials = (name: string) => {
+    if (!name) return "ME";
+    const parts = name.trim().split(" ");
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+
+  const initials = user ? getInitials(user.user_name) : "ME";
+
   return (
     <aside className="w-16 shrink-0 border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex flex-col items-center py-4 gap-2">
       {/* Logo */}
-      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-bold text-sm shadow-sm mb-2">
+      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white font-bold text-sm shadow-sm mb-2">
         N
       </div>
 
       <NavBtn
-        icon={<Users size={20} />}
+        icon={<User size={20} />}
         label="Bạn bè"
         active={tab === "friends" && !showNotif}
         onClick={() => onTabChange("friends")}
@@ -57,13 +71,22 @@ export function PrimarySidebar({
         <SettingsDialog />
 
         <NavBtn
-          icon={dark ? <Sun size={20} /> : <Moon size={20} />}
-          label={dark ? "Chế độ sáng" : "Chế độ tối"}
-          onClick={onToggleDark}
+          icon={isDark ? <Sun size={20} /> : <Moon size={20} />}
+          label={isDark ? "Chế độ sáng" : "Chế độ tối"}
+          onClick={handleToggleTheme}
         />
-        <div className="w-9 h-9 rounded-full bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center text-xs font-semibold mt-1 select-none">
-          ME
-        </div>
+
+        {user?.avatar_url ? (
+          <img
+            src={user.avatar_url}
+            alt={user.user_name}
+            className="w-9 h-9 rounded-full object-cover mt-1 select-none border border-neutral-200 dark:border-neutral-800"
+          />
+        ) : (
+          <div className="w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center text-xs font-semibold mt-1 select-none shadow-sm shadow-primary/20">
+            {initials}
+          </div>
+        )}
       </div>
     </aside>
   );

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { cn } from "@/lib/utils";
 
 // ─── NavBtn ───────────────────────────────────────────────────────────────────
@@ -17,7 +17,7 @@ export function NavBtn({ icon, label, active, onClick }: NavBtnProps) {
       className={cn(
         "relative w-11 h-11 rounded-xl flex items-center justify-center transition group",
         active
-          ? "bg-indigo-500 text-white shadow-sm shadow-indigo-500/30"
+          ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30"
           : "text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100",
       )}
     >
@@ -36,17 +36,19 @@ interface IconBtnProps {
   active?: boolean;
   title?: string;
   className?: string;
+  disabled?: boolean;
 }
 
-export function IconBtn({ children, onClick, active, title, className }: IconBtnProps) {
+export function IconBtn({ children, onClick, active, title, className, disabled }: IconBtnProps) {
   return (
     <button
       onClick={onClick}
       title={title}
+      disabled={disabled}
       className={cn(
-        "h-9 w-9 rounded-lg flex items-center justify-center transition",
+        "h-9 w-9 rounded-lg flex items-center justify-center transition disabled:opacity-40 disabled:cursor-not-allowed",
         active
-          ? "bg-indigo-100 dark:bg-indigo-500/20 text-indigo-500"
+          ? "bg-primary/10 dark:bg-primary/20 text-primary"
           : "text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-neutral-100",
         className,
       )}
@@ -88,6 +90,7 @@ interface AvatarProps {
   active?: boolean;
   gradient?: boolean;
   className?: string;
+  src?: string;
 }
 
 const avatarSizes = {
@@ -96,21 +99,34 @@ const avatarSizes = {
   lg: "w-20 h-20 text-2xl",
 };
 
-export function Avatar({ initials, size = "md", active, gradient, className }: AvatarProps) {
+export function Avatar({ initials, size = "md", active, gradient, className, src }: AvatarProps) {
+  const [hasError, setHasError] = useState(false);
+
   return (
     <div
       className={cn(
-        "rounded-full flex items-center justify-center font-semibold",
+        "rounded-full flex items-center justify-center font-semibold overflow-hidden select-none shrink-0",
         avatarSizes[size],
-        gradient
-          ? "bg-gradient-to-br from-indigo-400 to-violet-500 text-white shadow"
-          : active
-            ? "bg-indigo-500 text-white"
-            : "bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200",
+        src && !hasError
+          ? "bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-800"
+          : gradient
+            ? "bg-gradient-to-br from-primary to-primary/80 text-white shadow"
+            : active
+              ? "bg-primary text-white"
+              : "bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200",
         className,
       )}
     >
-      {initials}
+      {src && !hasError ? (
+        <img
+          src={src}
+          alt={initials}
+          className="w-full h-full object-cover"
+          onError={() => setHasError(true)}
+        />
+      ) : (
+        initials
+      )}
     </div>
   );
 }
@@ -137,7 +153,7 @@ export function SectionLabel({ children, count, action }: SectionLabelProps) {
         {count !== undefined && <span className="ml-1 font-normal">({count})</span>}
       </h5>
       {action && (
-        <button onClick={action.onClick} className="text-xs text-indigo-500 hover:underline">
+        <button onClick={action.onClick} className="text-xs text-primary hover:underline">
           {action.label}
         </button>
       )}
@@ -148,7 +164,7 @@ export function SectionLabel({ children, count, action }: SectionLabelProps) {
 // ─── UnreadBadge ──────────────────────────────────────────────────────────────
 export function UnreadBadge({ count }: { count: number }) {
   return (
-    <span className="text-[10px] font-semibold bg-indigo-500 text-white rounded-full min-w-[18px] h-[18px] px-1.5 flex items-center justify-center">
+    <span className="text-[10px] font-semibold bg-primary text-white rounded-full min-w-[18px] h-[18px] px-1.5 flex items-center justify-center">
       {count}
     </span>
   );

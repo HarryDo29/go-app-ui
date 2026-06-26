@@ -2,9 +2,11 @@
 
 export interface UserProfile {
   id: string;
-  name: string;
+  user_name: string;
   email: string;
-  avatar: string;
+  role: string;
+  is_active: boolean;
+  avatar_url: string;
 }
 
 export interface LoginRequest {
@@ -14,8 +16,8 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   user: UserProfile;
-  accessToken: string;
-  refreshToken: string;
+  access_token: string;
+  refresh_token: string;
 }
 
 export interface AuthState {
