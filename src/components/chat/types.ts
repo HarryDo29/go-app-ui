@@ -52,9 +52,8 @@ export type Conversation = {
   channel_type: string;
   subject: Subject;
   group: Group;
-  lastMsg: Message;
-  // type: ConversationType;
-  // members?: Member[];
+  last_msg: Message;
+  updated_at: Date;
 };
 
 // Channel is an alias for Conversation (used interchangeably)

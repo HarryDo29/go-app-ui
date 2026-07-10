@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { updateGroupApi } from "@/lib/api/groups";
 import { addChannelMemberApi, getUserChannelsApi } from "@/lib/api/channels";
+import { cn } from "@/lib/utils";
 
 interface RightPanelProps {
   active: Conversation;
@@ -103,7 +104,7 @@ export function RightPanel({ active, onClose, onUpdate }: RightPanelProps) {
       });
       setIsAddMemberOpen(false);
       setSelectedFriendIds([]);
-      onUpdate?.();
+      // Đợi sự kiện EventUpdatedChannel từ WebSocket để tự cập nhật danh sách
     } catch (err) {
       console.error("Lỗi thêm thành viên:", err);
     } finally {
@@ -129,34 +130,44 @@ export function RightPanel({ active, onClose, onUpdate }: RightPanelProps) {
 
   return (
     <>
-      <aside className="w-80 shrink-0 border-l border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex flex-col">
+      {/* Mobile overlay backdrop */}
+      <div
+        className="sm:hidden fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      <aside
+        className={cn(
+          "shrink-0 border-l border-neutral-200/80 dark:border-white/[0.06] bg-white dark:bg-neutral-900 flex flex-col",
+          // Mobile: overlay from right, Desktop: inline panel
+          "fixed sm:relative right-0 top-0 bottom-0 z-50 sm:z-auto w-[85vw] sm:w-80 slide-in-right sm:animate-none",
+        )}
+      >
         {/* Panel header */}
-        <div className="h-16 px-5 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between shrink-0">
-          <h3 className="text-sm font-semibold">
-            {isGroup ? "Thông tin nhóm" : "Thông tin liên hệ"}
-          </h3>
+        <div className="h-16 px-5 border-b border-neutral-200/80 dark:border-white/[0.06] flex items-center justify-between shrink-0">
+          <h3 className="text-sm font-bold">{isGroup ? "Thông tin nhóm" : "Thông tin liên hệ"}</h3>
           <button
             onClick={onClose}
             aria-label="Đóng bảng thông tin"
-            className="h-8 w-8 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-center transition"
+            className="h-8 w-8 rounded-lg hover:bg-neutral-100 dark:hover:bg-white/[0.06] flex items-center justify-center transition-all duration-200"
           >
             <X size={16} />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto pb-20 sm:pb-0">
           {/* Profile section */}
-          <div className="px-5 py-6 flex flex-col items-center text-center border-b border-neutral-200 dark:border-neutral-800">
+          <div className="px-5 py-8 flex flex-col items-center text-center border-b border-neutral-200/80 dark:border-white/[0.06] bg-gradient-to-b from-primary/3 dark:from-primary/5 to-transparent">
             <Avatar initials={initials} size="lg" gradient />
-            <h4 className="mt-3 text-base font-semibold">{name}</h4>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+            <h4 className="mt-4 text-lg font-bold">{name}</h4>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 font-medium">
               {isGroup
                 ? `${active.group?.member_count ?? 0} thành viên`
                 : (active.subject?.email ?? "")}
             </p>
 
             {/* Quick actions */}
-            <div className="mt-4 flex items-center gap-2">
+            <div className="mt-5 flex items-center gap-1">
               {isGroup ? (
                 <>
                   <QuickAction
@@ -182,7 +193,7 @@ export function RightPanel({ active, onClose, onUpdate }: RightPanelProps) {
 
           {/* Group info (groups only) */}
           {isGroup && active.group && (
-            <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800">
+            <div className="px-5 py-4 border-b border-neutral-200/80 dark:border-white/[0.06]">
               <SectionLabel
                 count={active.group.member_count}
                 action={
@@ -198,7 +209,7 @@ export function RightPanel({ active, onClose, onUpdate }: RightPanelProps) {
               </SectionLabel>
               {active.group.members && active.group.members.length > 0 ? (
                 showAllMembers && (
-                  <ul className="space-y-1 mt-2">
+                  <ul className="space-y-0.5 mt-2">
                     {active.group.members.map((m) => {
                       const user = m.user;
                       const displayName =
@@ -214,9 +225,9 @@ export function RightPanel({ active, onClose, onUpdate }: RightPanelProps) {
                       return (
                         <li
                           key={m.member_id}
-                          className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800/70 transition group"
+                          className="flex items-center gap-3 px-2.5 py-2.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-white/[0.04] transition-all duration-200 group"
                         >
-                          <div className="w-8 h-8 rounded-full bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center text-xs font-semibold shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-neutral-200 dark:bg-white/[0.08] flex items-center justify-center text-xs font-semibold shrink-0">
                             {initials}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -227,7 +238,7 @@ export function RightPanel({ active, onClose, onUpdate }: RightPanelProps) {
                               </p>
                             )}
                             {m.role && (
-                              <p className="text-[11px] text-primary flex items-center gap-1">
+                              <p className="text-[11px] text-primary flex items-center gap-1 font-medium">
                                 <Shield size={10} />
                                 {m.role}
                               </p>
@@ -235,7 +246,7 @@ export function RightPanel({ active, onClose, onUpdate }: RightPanelProps) {
                           </div>
                           <button
                             aria-label="Xóa"
-                            className="opacity-0 group-hover:opacity-100 transition text-neutral-400 hover:text-rose-500 p-1"
+                            className="opacity-0 group-hover:opacity-100 transition-all duration-200 text-neutral-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10"
                           >
                             <Trash2 size={14} />
                           </button>
@@ -254,19 +265,21 @@ export function RightPanel({ active, onClose, onUpdate }: RightPanelProps) {
 
           {/* Friend info (dm only) */}
           {!isGroup && active.subject && (
-            <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 space-y-2">
+            <div className="px-5 py-4 border-b border-neutral-200/80 dark:border-white/[0.06] space-y-3">
               <SectionLabel>Thông tin</SectionLabel>
-              <div className="text-sm text-neutral-600 dark:text-neutral-300 space-y-1.5">
-                <p>
-                  <span className="text-neutral-400 dark:text-neutral-500 text-xs">Email</span>
-                  <br />
-                  {active.subject.email}
-                </p>
-                <p>
-                  <span className="text-neutral-400 dark:text-neutral-500 text-xs">Vai trò</span>
-                  <br />
-                  {active.subject.role}
-                </p>
+              <div className="text-sm text-neutral-600 dark:text-neutral-300 space-y-3">
+                <div className="p-3 rounded-xl bg-neutral-50 dark:bg-white/[0.03]">
+                  <span className="text-neutral-400 dark:text-neutral-500 text-[11px] font-semibold uppercase tracking-wider">
+                    Email
+                  </span>
+                  <p className="mt-0.5 font-medium">{active.subject.email}</p>
+                </div>
+                <div className="p-3 rounded-xl bg-neutral-50 dark:bg-white/[0.03]">
+                  <span className="text-neutral-400 dark:text-neutral-500 text-[11px] font-semibold uppercase tracking-wider">
+                    Vai trò
+                  </span>
+                  <p className="mt-0.5 font-medium">{active.subject.role}</p>
+                </div>
               </div>
             </div>
           )}
@@ -274,17 +287,19 @@ export function RightPanel({ active, onClose, onUpdate }: RightPanelProps) {
           {/* Shared files */}
           <div className="px-5 py-4">
             <SectionLabel>Tệp đã chia sẻ</SectionLabel>
-            <div className="flex flex-col items-center justify-center py-6 text-center">
-              <FileText size={24} className="text-neutral-300 dark:text-neutral-600 mb-2" />
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <div className="w-12 h-12 rounded-xl bg-neutral-100 dark:bg-white/[0.04] flex items-center justify-center mb-2">
+                <FileText size={22} className="text-neutral-300 dark:text-neutral-600" />
+              </div>
               <p className="text-xs text-neutral-400 dark:text-neutral-500">
                 Chưa có tệp nào được chia sẻ
               </p>
             </div>
 
             {/* Photo grid */}
-            <div className="mt-5">
+            <div className="mt-4">
               <SectionLabel>Hình ảnh</SectionLabel>
-              <div className="flex flex-col items-center justify-center py-6 text-center">
+              <div className="flex flex-col items-center justify-center py-8 text-center">
                 <p className="text-xs text-neutral-400 dark:text-neutral-500">
                   Chưa có hình ảnh nào
                 </p>
@@ -298,7 +313,7 @@ export function RightPanel({ active, onClose, onUpdate }: RightPanelProps) {
       <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Thêm thành viên</DialogTitle>
+            <DialogTitle className="font-bold">Thêm thành viên</DialogTitle>
             <DialogDescription>
               Chọn bạn bè từ danh sách để thêm vào nhóm <strong>{name}</strong>.
             </DialogDescription>
@@ -316,12 +331,12 @@ export function RightPanel({ active, onClose, onUpdate }: RightPanelProps) {
                 placeholder="Tìm kiếm bạn bè..."
                 value={searchFriendQuery}
                 onChange={(e) => setSearchFriendQuery(e.target.value)}
-                className="w-full h-9 pl-9 pr-3 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-sm outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-neutral-400 transition"
+                className="w-full h-10 pl-9 pr-3 rounded-xl bg-neutral-100 dark:bg-white/[0.05] text-sm outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-neutral-400 transition-all duration-200"
               />
             </div>
 
             {/* Danh sách bạn bè có thể thêm */}
-            <div className="max-h-[220px] overflow-y-auto space-y-1 pr-1 border border-neutral-100 dark:border-neutral-800 rounded-lg p-2 bg-neutral-50/50 dark:bg-neutral-900/30">
+            <div className="max-h-[220px] overflow-y-auto space-y-0.5 pr-1 border border-neutral-100 dark:border-white/[0.06] rounded-xl p-2 bg-neutral-50/50 dark:bg-white/[0.02]">
               {isLoadingFriends ? (
                 <div className="text-center text-xs text-neutral-400 py-6">
                   Đang tải danh sách bạn bè...
@@ -346,7 +361,12 @@ export function RightPanel({ active, onClose, onUpdate }: RightPanelProps) {
                   return (
                     <label
                       key={friend.subject.user_id}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800/70 cursor-pointer transition select-none"
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-200 select-none",
+                        isChecked
+                          ? "bg-primary/6 dark:bg-primary/10 ring-1 ring-primary/15"
+                          : "hover:bg-neutral-100 dark:hover:bg-white/[0.04]",
+                      )}
                     >
                       <input
                         type="checkbox"
@@ -367,7 +387,7 @@ export function RightPanel({ active, onClose, onUpdate }: RightPanelProps) {
 
             {/* Hiển thị số lượng đã chọn */}
             {selectedFriendIds.length > 0 && (
-              <div className="text-xs text-neutral-500 dark:text-neutral-400">
+              <div className="text-xs text-neutral-500 dark:text-neutral-400 font-medium">
                 Đã chọn <strong className="text-primary">{selectedFriendIds.length}</strong> thành
                 viên
               </div>
@@ -381,13 +401,14 @@ export function RightPanel({ active, onClose, onUpdate }: RightPanelProps) {
                 setIsAddMemberOpen(false);
                 setSelectedFriendIds([]);
               }}
+              className="rounded-xl"
             >
               Hủy
             </Button>
             <Button
               onClick={handleAddMembers}
               disabled={selectedFriendIds.length === 0 || isAddingMember}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-sm shadow-primary/20"
             >
               {isAddingMember ? "Đang thêm..." : "Thêm vào nhóm"}
             </Button>
@@ -400,7 +421,7 @@ export function RightPanel({ active, onClose, onUpdate }: RightPanelProps) {
         <DialogContent className="sm:max-w-[425px]">
           <form onSubmit={handleRenameGroup}>
             <DialogHeader>
-              <DialogTitle>Đổi tên nhóm</DialogTitle>
+              <DialogTitle className="font-bold">Đổi tên nhóm</DialogTitle>
               <DialogDescription>
                 Nhập tên mới cho nhóm trò chuyện này. Tên mới sẽ hiển thị với tất cả thành viên.
               </DialogDescription>
@@ -408,7 +429,7 @@ export function RightPanel({ active, onClose, onUpdate }: RightPanelProps) {
 
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <label htmlFor="rename-group-name" className="text-sm font-medium">
+                <label htmlFor="rename-group-name" className="text-sm font-semibold">
                   Tên nhóm mới
                 </label>
                 <Input
@@ -418,18 +439,24 @@ export function RightPanel({ active, onClose, onUpdate }: RightPanelProps) {
                   onChange={(e) => setNewGroupName(e.target.value)}
                   required
                   autoFocus
+                  className="rounded-xl"
                 />
               </div>
             </div>
 
             <DialogFooter className="gap-2 sm:gap-0">
-              <Button type="button" variant="outline" onClick={() => setIsRenameOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsRenameOpen(false)}
+                className="rounded-xl"
+              >
                 Hủy
               </Button>
               <Button
                 type="submit"
                 disabled={!newGroupName.trim() || isRenaming}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-sm shadow-primary/20"
               >
                 {isRenaming ? "Đang lưu..." : "Lưu thay đổi"}
               </Button>

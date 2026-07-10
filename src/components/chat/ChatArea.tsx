@@ -15,6 +15,7 @@ import {
   Trash2,
   RotateCcw,
   Check,
+  ArrowLeft,
 } from "lucide-react";
 import type { Conversation, Message } from "./types";
 import { Avatar, IconBtn } from "./ui-primitives";
@@ -30,9 +31,10 @@ interface ChatHeaderProps {
   active: Conversation;
   showRight: boolean;
   onToggleRight: () => void;
+  onBack?: () => void;
 }
 
-export function ChatHeader({ active, showRight, onToggleRight }: ChatHeaderProps) {
+export function ChatHeader({ active, showRight, onToggleRight, onBack }: ChatHeaderProps) {
   const isGroup = active.channel_type === "group";
   const name = isGroup
     ? (active.group?.group_name ?? "Nhóm")
@@ -49,22 +51,35 @@ export function ChatHeader({ active, showRight, onToggleRight }: ChatHeaderProps
   const subtitle = isGroup ? `${active.group?.member_count ?? 0} thành viên` : "";
 
   return (
-    <header className="h-16 px-6 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex items-center justify-between shrink-0">
-      <div className="flex items-center gap-3 min-w-0">
+    <header className="h-16 px-3 sm:px-6 border-b border-neutral-200/80 dark:border-white/[0.06] bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl flex items-center justify-between shrink-0">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+        {/* Mobile back button */}
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="sm:hidden h-9 w-9 rounded-xl flex items-center justify-center text-neutral-500 hover:bg-neutral-100 dark:hover:bg-white/[0.06] transition-all duration-200 shrink-0"
+          >
+            <ArrowLeft size={20} />
+          </button>
+        )}
         <Avatar initials={initials} size="md" src={avatarUrl} />
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold truncate">{name}</h2>
-          <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">{subtitle}</p>
+          <h2 className="text-sm font-bold truncate">{name}</h2>
+          {subtitle && (
+            <p className="text-[11px] text-neutral-500 dark:text-neutral-400 truncate font-medium">
+              {subtitle}
+            </p>
+          )}
         </div>
       </div>
-      <div className="flex items-center gap-1 shrink-0">
-        <IconBtn title="Gọi thoại">
+      <div className="flex items-center gap-0.5 shrink-0">
+        <IconBtn title="Gọi thoại" className="hidden sm:flex">
           <Phone size={18} />
         </IconBtn>
-        <IconBtn title="Gọi video">
+        <IconBtn title="Gọi video" className="hidden sm:flex">
           <Video size={18} />
         </IconBtn>
-        <IconBtn title="Tìm kiếm">
+        <IconBtn title="Tìm kiếm" className="hidden sm:flex">
           <Search size={18} />
         </IconBtn>
         <IconBtn active={showRight} onClick={onToggleRight} title="Thông tin">
@@ -141,7 +156,7 @@ function MessageBubble({
   const actionMenu = (
     <div
       className={cn(
-        "flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity",
+        "flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all duration-200",
         isMe ? "flex-row-reverse" : "flex-row",
       )}
     >
@@ -149,7 +164,7 @@ function MessageBubble({
       <button
         onClick={() => actions.onReply(message)}
         title="Trả lời"
-        className="h-7 w-7 rounded-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 flex items-center justify-center text-neutral-500 hover:text-primary hover:border-primary/40 transition shadow-sm"
+        className="h-7 w-7 rounded-full bg-white dark:bg-neutral-800 border border-neutral-200/80 dark:border-white/[0.08] flex items-center justify-center text-neutral-500 hover:text-primary hover:border-primary/30 hover:scale-110 transition-all duration-200 shadow-sm"
       >
         <Reply size={13} />
       </button>
@@ -158,7 +173,7 @@ function MessageBubble({
       <button
         onClick={() => actions.onHide(message.msg_id)}
         title="Xóa với tôi"
-        className="h-7 w-7 rounded-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 flex items-center justify-center text-neutral-500 hover:text-rose-500 hover:border-rose-400/40 transition shadow-sm"
+        className="h-7 w-7 rounded-full bg-white dark:bg-neutral-800 border border-neutral-200/80 dark:border-white/[0.08] flex items-center justify-center text-neutral-500 hover:text-rose-500 hover:border-rose-400/30 hover:scale-110 transition-all duration-200 shadow-sm"
       >
         <Trash2 size={13} />
       </button>
@@ -171,7 +186,7 @@ function MessageBubble({
             setEditContent(message.content);
           }}
           title="Chỉnh sửa"
-          className="h-7 w-7 rounded-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 flex items-center justify-center text-neutral-500 hover:text-primary hover:border-primary/40 transition shadow-sm"
+          className="h-7 w-7 rounded-full bg-white dark:bg-neutral-800 border border-neutral-200/80 dark:border-white/[0.08] flex items-center justify-center text-neutral-500 hover:text-primary hover:border-primary/30 hover:scale-110 transition-all duration-200 shadow-sm"
         >
           <Pencil size={13} />
         </button>
@@ -180,7 +195,7 @@ function MessageBubble({
         <button
           onClick={() => actions.onRecall(message.msg_id)}
           title="Thu hồi"
-          className="h-7 w-7 rounded-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 flex items-center justify-center text-neutral-500 hover:text-amber-500 hover:border-amber-400/40 transition shadow-sm"
+          className="h-7 w-7 rounded-full bg-white dark:bg-neutral-800 border border-neutral-200/80 dark:border-white/[0.08] flex items-center justify-center text-neutral-500 hover:text-amber-500 hover:border-amber-400/30 hover:scale-110 transition-all duration-200 shadow-sm"
         >
           <RotateCcw size={13} />
         </button>
@@ -215,13 +230,13 @@ function MessageBubble({
           />
           <button
             onClick={handleConfirmEdit}
-            className="h-5 w-5 rounded-full bg-white/30 hover:bg-white/50 flex items-center justify-center shrink-0 transition"
+            className="h-5 w-5 rounded-full bg-white/30 hover:bg-white/50 flex items-center justify-center shrink-0 transition-all duration-200"
           >
             <Check size={11} />
           </button>
           <button
             onClick={() => setIsEditing(false)}
-            className="h-5 w-5 rounded-full bg-white/30 hover:bg-white/50 flex items-center justify-center shrink-0 transition"
+            className="h-5 w-5 rounded-full bg-white/30 hover:bg-white/50 flex items-center justify-center shrink-0 transition-all duration-200"
           >
             <X size={11} />
           </button>
@@ -233,7 +248,7 @@ function MessageBubble({
         <img
           src={message.content}
           alt="Hình ảnh"
-          className="max-w-xs max-h-60 rounded-xl object-cover cursor-pointer hover:opacity-95 transition-opacity"
+          className="max-w-[280px] sm:max-w-xs max-h-60 rounded-xl object-cover cursor-pointer hover:opacity-95 transition-opacity"
           onClick={() => window.open(message.content, "_blank")}
         />
       );
@@ -290,28 +305,34 @@ function MessageBubble({
       {/* Action menu left side (for my messages: shows on left of bubble) */}
       {isMe && !isRecalled && <div className="mb-5">{actionMenu}</div>}
 
-      <div className={cn("max-w-md flex flex-col", isMe ? "items-end" : "items-start")}>
+      <div
+        className={cn("max-w-[75vw] sm:max-w-md flex flex-col", isMe ? "items-end" : "items-start")}
+      >
         {showAuthor && (
-          <span className="text-[11px] text-neutral-500 dark:text-neutral-400 mb-1 ml-1">
+          <span className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400 mb-1 ml-1">
             {senderName}
           </span>
         )}
         <div
           className={cn(
-            "text-sm leading-relaxed shadow-sm overflow-hidden",
+            "text-sm leading-relaxed overflow-hidden",
             bubbleRadius,
             isRecalled
-              ? "bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 px-4 py-2.5"
+              ? "bg-neutral-100 dark:bg-white/[0.04] border border-neutral-200/80 dark:border-white/[0.06] px-4 py-2.5"
               : message.msg_type === "image"
                 ? ""
                 : isMe
-                  ? "bg-primary text-primary-foreground px-4 py-2.5"
-                  : "bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 px-4 py-2.5",
+                  ? "bg-gradient-to-br from-primary to-primary/85 text-primary-foreground px-4 py-2.5 shadow-md shadow-primary/15"
+                  : "bg-white dark:bg-white/[0.06] border border-neutral-200/60 dark:border-white/[0.06] px-4 py-2.5 shadow-sm",
           )}
         >
           {bubbleContent}
         </div>
-        {isLastInGroup && <span className="text-[10px] text-neutral-400 mt-1 px-1">{msgTime}</span>}
+        {isLastInGroup && (
+          <span className="text-[10px] text-neutral-400 dark:text-neutral-500 mt-1 px-1 font-medium">
+            {msgTime}
+          </span>
+        )}
       </div>
 
       {/* Action menu right side (for others' messages: shows on right of bubble) */}
@@ -401,7 +422,7 @@ export function MessageList({
   };
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+    <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4">
       {messages.map((msg, i) => {
         const prev = messages[i - 1];
         const next = messages[i + 1];
@@ -421,12 +442,12 @@ export function MessageList({
         return (
           <React.Fragment key={msg.msg_id}>
             {showDateSeparator && (
-              <div className="flex items-center gap-3 my-2">
-                <div className="flex-1 h-px bg-neutral-200 dark:bg-neutral-700/60" />
-                <span className="text-[11px] text-neutral-400 bg-neutral-100 dark:bg-neutral-800/60 px-3 py-1 rounded-full whitespace-nowrap">
+              <div className="flex items-center gap-4 my-3">
+                <div className="flex-1 h-px bg-neutral-200/60 dark:bg-white/[0.06]" />
+                <span className="text-[11px] font-medium text-neutral-400 dark:text-neutral-500 bg-neutral-100/80 dark:bg-white/[0.04] px-4 py-1.5 rounded-full whitespace-nowrap">
                   {formatDateLabel(msg.created_at)}
                 </span>
-                <div className="flex-1 h-px bg-neutral-200 dark:bg-neutral-700/60" />
+                <div className="flex-1 h-px bg-neutral-200/60 dark:bg-white/[0.06]" />
               </div>
             )}
             <MessageBubble
@@ -537,13 +558,13 @@ export function MessageInput({
   };
 
   return (
-    <div className="px-6 pb-5 pt-2 bg-neutral-50 dark:bg-neutral-950 shrink-0 flex flex-col gap-2">
+    <div className="px-3 sm:px-6 pb-4 sm:pb-5 pt-2 bg-neutral-50/80 dark:bg-neutral-950/80 backdrop-blur-sm shrink-0 flex flex-col gap-2 mb-14 sm:mb-0">
       {/* Reply Banner */}
       {replyTo && !replyTo.is_delete && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 dark:bg-primary/10 border-l-2 border-primary rounded-lg">
+        <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 dark:bg-primary/10 border-l-2 border-primary rounded-xl">
           <Reply size={14} className="text-primary shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-semibold text-primary mb-0.5">Trả lời tin nhắn</p>
+            <p className="text-[10px] font-bold text-primary mb-0.5">Trả lời tin nhắn</p>
             <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
               {replyTo.msg_type === "image"
                 ? "🖼️ Hình ảnh"
@@ -554,7 +575,7 @@ export function MessageInput({
           </div>
           <button
             onClick={onCancelReply}
-            className="h-5 w-5 rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-700 flex items-center justify-center text-neutral-400 hover:text-neutral-600 transition shrink-0"
+            className="h-6 w-6 rounded-full hover:bg-neutral-200 dark:hover:bg-white/[0.08] flex items-center justify-center text-neutral-400 hover:text-neutral-600 transition-all duration-200 shrink-0"
           >
             <X size={12} />
           </button>
@@ -563,7 +584,7 @@ export function MessageInput({
 
       {/* Attachment Preview Area */}
       {(attachment || isUploading) && (
-        <div className="flex items-center gap-3 p-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-200 max-w-md">
+        <div className="flex items-center gap-3 p-3 bg-white dark:bg-white/[0.04] border border-neutral-200/80 dark:border-white/[0.06] rounded-xl shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-200 max-w-md">
           {isUploading ? (
             <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
               <Loader2 className="h-4 w-4 animate-spin text-primary animate-duration-1000" />
@@ -576,10 +597,10 @@ export function MessageInput({
                   <img
                     src={attachment.url}
                     alt="Preview"
-                    className="h-10 w-10 object-cover rounded-lg border border-neutral-200 dark:border-neutral-800 shrink-0"
+                    className="h-10 w-10 object-cover rounded-lg border border-neutral-200/80 dark:border-white/[0.06] shrink-0"
                   />
                 ) : (
-                  <div className="h-10 w-10 bg-neutral-100 dark:bg-neutral-800 rounded-lg flex items-center justify-center text-primary shrink-0">
+                  <div className="h-10 w-10 bg-neutral-100 dark:bg-white/[0.06] rounded-lg flex items-center justify-center text-primary shrink-0">
                     <Paperclip size={18} />
                   </div>
                 )}
@@ -587,14 +608,14 @@ export function MessageInput({
                   <p className="text-xs font-medium truncate text-neutral-700 dark:text-neutral-200">
                     {attachment.name}
                   </p>
-                  <p className="text-[10px] text-neutral-400 uppercase">
+                  <p className="text-[10px] text-neutral-400 uppercase font-medium">
                     {attachment.type === "image" ? "Hình ảnh" : "Tệp tin"}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setAttachment(null)}
-                className="h-6 w-6 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 flex items-center justify-center transition"
+                className="h-6 w-6 rounded-full hover:bg-neutral-100 dark:hover:bg-white/[0.08] text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 flex items-center justify-center transition-all duration-200"
               >
                 <X size={14} />
               </button>
@@ -618,7 +639,7 @@ export function MessageInput({
         className="hidden"
       />
 
-      <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-sm focus-within:ring-2 focus-within:ring-primary/30 transition">
+      <div className="bg-white dark:bg-white/[0.04] border border-neutral-200/60 dark:border-white/[0.06] rounded-2xl shadow-sm focus-within:ring-2 focus-within:ring-primary/25 focus-within:border-primary/20 transition-all duration-200">
         <div className="flex items-end gap-1 px-2 py-2">
           <IconBtn
             title="Đính kèm tệp"
@@ -649,7 +670,7 @@ export function MessageInput({
             onClick={handleSendClick}
             disabled={(!draft.trim() && !attachment) || isUploading}
             aria-label="Gửi tin nhắn"
-            className="h-9 w-9 rounded-xl bg-primary hover:bg-primary/90 active:bg-primary/95 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center transition shrink-0"
+            className="h-9 w-9 rounded-xl bg-primary hover:bg-primary/90 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center transition-all duration-200 shrink-0 shadow-sm shadow-primary/20"
           >
             <Send size={16} />
           </button>

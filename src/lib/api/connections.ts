@@ -19,16 +19,19 @@ export async function getConnectionDetailApi(body: any): Promise<any> {
 /**
  * Lấy connection theo user ID
  */
-export async function getUserConnectionsApi(userId: string): Promise<any> {
-  const { data } = await axiosClient.get(`/connections/${userId}`);
+export async function getUserConnectionsApi(status: string): Promise<any> {
+  const { data } = await axiosClient.get(`/connections/user?status=${status}`);
   return data;
 }
 
 /**
- * Chấp nhận connection
+ * Phản hồi connection (accept / reject)
  */
-export async function acceptConnectionApi(connectionId: string, body?: any): Promise<any> {
-  const { data } = await axiosClient.put(`/connections/${connectionId}/accept`, body);
+export async function respondConnectionApi(
+  connectionId: string,
+  status: "ACCEPTED" | "REJECTED",
+): Promise<any> {
+  const { data } = await axiosClient.put(`/connections/${connectionId}/respond?status=${status}`);
   return data;
 }
 

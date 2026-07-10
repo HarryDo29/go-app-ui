@@ -31,3 +31,8 @@ export async function deleteUserApi(userId: string): Promise<any> {
   const { data } = await axiosClient.delete(`/user/${userId}`);
   return data;
 }
+
+export async function searchUsersApi(name: string): Promise<any> {
+  const { data } = await axiosClient.get(`/user/search?name=${name}`);
+  return data;
+}

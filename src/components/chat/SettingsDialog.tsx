@@ -724,41 +724,45 @@ export function SettingsDialog() {
         </span>
       </DialogTrigger>
 
-      <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden rounded-2xl">
-        <div className="flex h-[560px]">
+      <DialogContent className="max-w-[95vw] sm:max-w-2xl p-0 gap-0 overflow-hidden rounded-2xl">
+        <div className="flex h-[80vh] sm:h-[560px]">
           {/* ── Left nav ── */}
-          <div className="w-52 shrink-0 border-r border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 flex flex-col">
-            <DialogHeader className="px-4 pt-5 pb-4 shrink-0">
-              <DialogTitle className="text-base font-semibold">Cài đặt</DialogTitle>
+          <div className="w-14 sm:w-52 shrink-0 border-r border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 flex flex-col">
+            <DialogHeader className="px-3 sm:px-4 pt-5 pb-4 shrink-0">
+              <DialogTitle className="text-sm sm:text-base font-bold text-center sm:text-left">
+                <span className="hidden sm:inline">Cài đặt</span>
+                <span className="sm:hidden">⚙️</span>
+              </DialogTitle>
             </DialogHeader>
-            <nav className="flex-1 px-2 pb-3 overflow-y-auto">
+            <nav className="flex-1 px-1 sm:px-2 pb-3 overflow-y-auto">
               <ul className="space-y-0.5">
                 {SECTIONS.map((s) => (
                   <li key={s.id}>
                     <button
                       onClick={() => setActive(s.id)}
                       className={cn(
-                        "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition cursor-pointer",
+                        "w-full flex items-center justify-center sm:justify-start gap-2.5 px-3 py-2.5 sm:py-2 rounded-xl text-sm transition-all duration-200 cursor-pointer",
                         active === s.id
-                          ? "bg-primary text-white font-medium"
-                          : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-800",
+                          ? "bg-primary text-white font-medium shadow-sm shadow-primary/20"
+                          : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-850",
                       )}
+                      title={s.label}
                     >
                       {s.icon}
-                      <span>{s.label}</span>
+                      <span className="hidden sm:inline">{s.label}</span>
                     </button>
                   </li>
                 ))}
               </ul>
             </nav>
             {/* App version */}
-            <div className="px-4 py-3 border-t border-neutral-200 dark:border-neutral-800 shrink-0">
-              <p className="text-[11px] text-neutral-400">Nova Chat v1.0.0</p>
+            <div className="px-3 sm:px-4 py-3 border-t border-neutral-200 dark:border-neutral-800 shrink-0 text-center sm:text-left">
+              <p className="text-[10px] text-neutral-400">v1.0</p>
             </div>
           </div>
 
           {/* ── Right content ── */}
-          <div className="flex-1 overflow-y-auto px-6 py-5">{renderContent()}</div>
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5">{renderContent()}</div>
         </div>
       </DialogContent>
     </Dialog>

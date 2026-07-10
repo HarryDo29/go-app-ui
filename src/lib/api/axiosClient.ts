@@ -68,6 +68,7 @@ function processQueue(error: unknown, token: string | null = null) {
 axiosClient.interceptors.response.use(
   (response) => response,
   async (error) => {
+    console.log("error: ", error);
     const originalRequest = error.config as
       | (InternalAxiosRequestConfig & { skipAuth?: boolean; _retry?: boolean })
       | undefined;
