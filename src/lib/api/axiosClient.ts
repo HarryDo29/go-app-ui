@@ -98,10 +98,10 @@ axiosClient.interceptors.response.use(
         if (!refreshToken) throw new Error("No refresh token");
 
         const { data } = await axios.post(`${BASE_URL}/auth/refresh`, {
-          refreshToken,
+          refresh_token: refreshToken,
         });
 
-        const newAccessToken = data.data?.accessToken ?? data.accessToken;
+        const newAccessToken = data.data?.accessToken;
         setCookie(ACCESS_TOKEN_KEY, newAccessToken, 1);
 
         // Xử lý các request đang chờ
