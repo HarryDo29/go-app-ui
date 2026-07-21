@@ -135,16 +135,16 @@ export default function LoginPage() {
           </form>
 
           {/* Divider */}
-          <div className="my-6 flex items-center gap-3">
+          {/* <div className="my-6 flex items-center gap-3">
             <span className="h-px flex-1 bg-neutral-200 dark:bg-white/[0.06]" />
             <span className="text-xs font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">
               hoặc
             </span>
             <span className="h-px flex-1 bg-neutral-200 dark:bg-white/[0.06]" />
-          </div>
+          </div> */}
 
           {/* Social login */}
-          <div className="flex gap-3">
+          {/* <div className="flex gap-3">
             <button
               type="button"
               className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-neutral-300 dark:border-white/[0.08] bg-white dark:bg-white/[0.03] text-sm font-medium text-neutral-700 dark:text-neutral-200 transition-all duration-200 hover:bg-neutral-50 dark:hover:bg-white/[0.06] active:scale-[0.97]"
@@ -166,7 +166,7 @@ export default function LoginPage() {
               </svg>
               GitHub
             </button>
-          </div>
+          </div> */}
         </div>
 
         {/* Footer link */}
