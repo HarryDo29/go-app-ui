@@ -1,0 +1,7 @@
+www.chat-app.website {
+    reverse_proxy go-app-frontend:80
+}
+
+api.chat-app.website {
+    reverse_proxy go-app-backend:8080
+}

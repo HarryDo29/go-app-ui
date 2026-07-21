@@ -10,16 +10,9 @@ services:
       - "443:443/udp"
 
     volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
-
-    command:
-      - caddy
-      - reverse-proxy
-      - --from
-      - www.chat-app.website
-      - --to
-      - go-app-frontend:80
 
     networks:
       - go-app-network
@@ -31,4 +24,3 @@ volumes:
 networks:
   go-app-network:
     external: true
-    name: go-app-network
