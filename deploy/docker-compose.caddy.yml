@@ -9,9 +9,27 @@ services:
       - "443:443"
       - "443:443/udp"
 
-    configs:
-      - source: caddyfile
-        target: /etc/caddy/Caddyfile
+    entrypoint: ["/bin/sh", "-c"]
+
+    command:
+      - |
+        cat > /tmp/Caddyfile <<'EOF'
+        chat-app.website {
+            redir https://www.chat-app.website{uri} permanent
+        }
+
+        www.chat-app.website {
+            reverse_proxy go-app-frontend:80
+        }
+
+        api.chat-app.website {
+            reverse_proxy go-app-backend:8080
+        }
+        EOF
+
+        exec caddy run \
+          --config /tmp/Caddyfile \
+          --adapter caddyfile
 
     volumes:
       - caddy_data:/data
@@ -19,10 +37,6 @@ services:
 
     networks:
       - go-app-network
-
-configs:
-  caddyfile:
-    file: ./Caddyfile
 
 volumes:
   caddy_data:
