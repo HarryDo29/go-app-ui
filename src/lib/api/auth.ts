@@ -27,11 +27,9 @@ export async function getMeApi(): Promise<UserProfile> {
 
 // ── Refresh token ───────────────────────────────────────────────────────────
 export async function refreshTokenApi(refreshToken: string): Promise<{ accessToken: string }> {
-  const { data } = await axiosClient.post<{ data: { accessToken: string } }>(
-    "/auth/refresh",
-    { refreshToken },
-    { skipAuth: true } as any,
-  );
+  const { data } = await axiosClient.post<{ data: { accessToken: string } }>("/auth/refresh", {
+    refreshToken,
+  });
   return data.data;
 }
 
