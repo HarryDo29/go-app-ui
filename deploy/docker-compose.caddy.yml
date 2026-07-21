@@ -9,13 +9,20 @@ services:
       - "443:443"
       - "443:443/udp"
 
+    configs:
+      - source: caddyfile
+        target: /etc/caddy/Caddyfile
+
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
 
     networks:
       - go-app-network
+
+configs:
+  caddyfile:
+    file: ./Caddyfile
 
 volumes:
   caddy_data:
