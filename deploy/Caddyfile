@@ -1,3 +1,7 @@
+chat-app.website {
+    redir https://www.chat-app.website{uri} permanent
+}
+
 www.chat-app.website {
     reverse_proxy go-app-frontend:80
 }
