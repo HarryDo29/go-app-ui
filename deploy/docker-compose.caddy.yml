@@ -25,6 +25,10 @@ services:
         api.chat-app.website {
             reverse_proxy go-app-backend:8080
         }
+
+        minio.chat-app.website {
+            reverse_proxy go-app-minio:9000
+        }
         EOF
 
         exec caddy run \
